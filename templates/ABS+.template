@@ -1,0 +1,5 @@
+ABS+
+Material: {{material}}
+Name: {{name}}
+settings_extruder_temp + 10: {{ settings_extruder_temp + 10 }}
+settings_extruder_temp: {{ settings_extruder_temp }}
