@@ -1,4 +1,4 @@
-# sm2ss
+# Spoolman to Superslicer filament transfer
 
 Spoolman to SuperSlicer filament transfer
 
@@ -12,12 +12,19 @@ pip install -r requirements.txt
 ```
 
 ## Config file templates
-sm2ss uses Jinja2 templates for the configuration files it creates.
-They are stored with the filaments' material's name in `templates/`.
-If the material's template isn't found, `default.template` is used.
+spoolman2superslicer uses Jinja2 templates for the configuration files
+it creates. They are stored with the filaments' material's name in
+`templates/`. If the material's template isn't found,
+`default.template` is used.
 
 ## Run
 
 ```sh
-./sm2ss.py -d ~/.config/SuperSlicer/filament/
+./spoolman2superslicer.py -d ~/.config/SuperSlicer/filament/
 ```
+
+If `-D` is given, all ini files are removed in the directory before
+the new ones are created.
+
+'-U' will cause the program to keep running, adding, updating and
+deleting files when the filaments are changed in Spoolman.

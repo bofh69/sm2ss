@@ -24,7 +24,6 @@ loader = FileSystemLoader("templates")
 env = Environment(loader=loader)
 
 parser = argparse.ArgumentParser(
-    prog="sm2ss",
     description="Fetches filaments from Spoolman and creates SuperSlicer filament configs.",
 )
 
