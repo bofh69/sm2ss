@@ -5,8 +5,6 @@ Program to load filaments from Spoolman
 and create SuperSlicer filament configuration.
 """
 
-# TODO: Store filaments ids and filename to use during updates
-
 import argparse
 import asyncio
 import json
@@ -19,6 +17,8 @@ import requests
 from websockets.client import connect
 
 DEFAULT_TEMPLATE = "default.template"
+
+id_to_filename = {}
 
 loader = FileSystemLoader("templates")
 env = Environment(loader=loader)
@@ -73,10 +73,10 @@ def get_filament_filename(filament):
 
 def delete_filament(filament):
     """Delete the filament's file"""
-    filename = get_filament_filename(filament)
+    old_filename = id_to_filename[filament["id"]]
 
-    print(f"Deleting: {args.dir}/{filename}")
-    os.remove(filename)
+    print(f"Deleting: {old_filename}")
+    os.remove(old_filename)
 
 
 def delete_all_filaments():
@@ -91,6 +91,8 @@ def delete_all_filaments():
 def write_filament(filament):
     """Output the filament to the right file"""
     filename = get_filament_filename(filament)
+
+    id_to_filename[filament["id"]] = filename
 
     if "material" in filament:
         template_name = f"{filament['material']}.template"
@@ -119,10 +121,14 @@ def load_and_update_all_filaments(url: str):
 
 def handle_filament_update_msg(msg):
     """Handles filament update msgs received via WS"""
-    if msg["type"] == "added" or msg["type"] == "updated":
-        write_filament(msg["payload"])
+    filament = msg["payload"]
+    if msg["type"] == "added":
+        write_filament(filament)
+    elif msg["type"] == "updated":
+        delete_filament(filament)
+        write_filament(filament)
     elif msg["type"] == "deleted":
-        delete_filament(msg["payload"])
+        delete_filament(filament)
     else:
         print(f"Got unknown filament update msg: {msg}")
 
