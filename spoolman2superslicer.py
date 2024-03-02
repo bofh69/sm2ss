@@ -27,6 +27,7 @@ parser = argparse.ArgumentParser(
     description="Fetches filaments from Spoolman and creates SuperSlicer filament configs.",
 )
 
+parser.add_argument("--version", action="version", version="%(prog)s 0.0.1")
 parser.add_argument(
     "-u",
     "--url",
