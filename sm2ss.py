@@ -5,7 +5,6 @@ Program to load filaments from Spoolman
 and create SuperSlicer filament configuration.
 """
 
-# TODO: Delete old filaments' config during startups
 # TODO: Store filaments ids and filename to use during updates
 
 import argparse
@@ -51,6 +50,13 @@ parser.add_argument(
     help="Keep running and update filament configs if they're updated in Spoolman",
 )
 
+parser.add_argument(
+    "-D",
+    "--delete-all",
+    action="store_true",
+    help="Delete all filaments before adding existing ones",
+)
+
 args = parser.parse_args()
 
 
@@ -71,6 +77,15 @@ def delete_filament(filament):
 
     print(f"Deleting: {args.dir}/{filename}")
     os.remove(filename)
+
+
+def delete_all_filaments():
+    """Delete all .ini files in the filament dir"""
+    for filename in os.listdir(args.dir):
+        if filename.endswith(".ini"):
+            filename = args.dir + "/" + filename
+            print(f"Deleting: {filename}")
+            os.remove(filename)
 
 
 def write_filament(filament):
@@ -119,6 +134,9 @@ async def connect_filament_updates():
             msg = json.loads(msg)
             handle_filament_update_msg(msg)
 
+
+if args.delete_all:
+    delete_all_filaments()
 
 try:
     load_and_update_all_filaments(args.url)
