@@ -18,10 +18,12 @@ from websockets.client import connect
 
 DEFAULT_TEMPLATE = "default.template"
 
-id_to_filename = {}
+ORCASLICER = "orcaslicer"
+PRUSASLICER = "prusaslicer"
+SLICER = "sl1cer"
+SUPERSLICER = "superslicer"
 
-loader = FileSystemLoader("templates")
-env = Environment(loader=loader)
+id_to_filename = {}
 
 parser = argparse.ArgumentParser(
     description="Fetches filaments from Spoolman and creates SuperSlicer filament configs.",
@@ -29,35 +31,58 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("--version", action="version", version="%(prog)s 0.0.1")
 parser.add_argument(
+    "-d",
+    "--dir",
+    metavar="DIR",
+    required=True,
+    help="the filament config dir",
+)
+
+parser.add_argument(
+    "-s",
+    "--slicer",
+    default=SUPERSLICER,
+    choices=[ORCASLICER, PRUSASLICER, SLICER, SUPERSLICER],
+    help="the slicer",
+)
+
+parser.add_argument(
     "-u",
     "--url",
     metavar="URL",
     default="http://mainsailos.local:7912",
     help="URL for the Spoolman installation",
 )
-parser.add_argument(
-    "-d",
-    "--dir",
-    metavar="DIR",
-    required=True,
-    help="SuperSlicer's filament config dir",
-)
 
 parser.add_argument(
     "-U",
     "--updates",
     action="store_true",
-    help="Keep running and update filament configs if they're updated in Spoolman",
+    help="keep running and update filament configs if they're updated in Spoolman",
 )
 
 parser.add_argument(
     "-D",
     "--delete-all",
     action="store_true",
-    help="Delete all filaments before adding existing ones",
+    help="delete all filament configs before adding existing ones",
 )
 
 args = parser.parse_args()
+
+loader = FileSystemLoader("templates-" + args.slicer)
+env = Environment(loader=loader)
+
+
+def get_config_suffix():
+    """Returns the slicer's config file prefix"""
+    if args.slicer == SUPERSLICER:
+        return "ini"
+    elif args.slicer == ORCASLICER:
+        return "json"
+    else:
+        # I don't know...
+        print("That slicer is not yet supported")
 
 
 def load_filaments(url: str):
@@ -68,7 +93,7 @@ def load_filaments(url: str):
 
 def get_filament_filename(filament):
     """Returns the filament's config filename"""
-    return f"{args.dir}/{filament['vendor']['name']}-{filament['name']}.ini"
+    return f"{args.dir}/{filament['vendor']['name']}-{filament['name']}.{get_config_suffix()}"
 
 
 def delete_filament(filament):
@@ -80,9 +105,9 @@ def delete_filament(filament):
 
 
 def delete_all_filaments():
-    """Delete all .ini files in the filament dir"""
+    """Delete all config files in the filament dir"""
     for filename in os.listdir(args.dir):
-        if filename.endswith(".ini"):
+        if filename.endswith("." + get_config_suffix()):
             filename = args.dir + "/" + filename
             print(f"Deleting: {filename}")
             os.remove(filename)

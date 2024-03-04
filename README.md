@@ -1,4 +1,4 @@
-# Spoolman to Superslicer filament transfer
+# Spoolman to slicer filament transfer
 Create [SuperSlicer](https://github.com/supermerill/SuperSlicer) filament configuration from the filaments in [Spoolman](https://github.com/Donkie/Spoolman).
 
 ## Prepare for running
@@ -11,7 +11,7 @@ pip install -r requirements.txt
 ```
 
 ## Config file templates
-spoolman2superslicer uses [Jinja2](https://palletsprojects.com/p/jinja/) templates for the configuration files
+spoolman2slicer uses [Jinja2](https://palletsprojects.com/p/jinja/) templates for the configuration files
 it creates. They are stored with the filaments' material's name in
 `templates/`. If the material's template isn't found,
 `default.template` is used.
@@ -19,7 +19,7 @@ it creates. They are stored with the filaments' material's name in
 ## Run
 
 ```sh
-./spoolman2superslicer.py -d ~/.config/SuperSlicer/filament/
+./spoolman2slicer.py -d ~/.config/SuperSlicer/filament/
 ```
 
 If `-D` is given, all ini files are removed in the directory before
