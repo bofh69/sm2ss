@@ -23,8 +23,6 @@ PRUSASLICER = "prusaslicer"
 SLICER = "sl1cer"
 SUPERSLICER = "superslicer"
 
-id_to_filename = {}
-
 parser = argparse.ArgumentParser(
     description="Fetches filaments from Spoolman and creates SuperSlicer filament configs.",
 )
@@ -73,16 +71,19 @@ args = parser.parse_args()
 loader = FileSystemLoader("templates-" + args.slicer)
 env = Environment(loader=loader)
 
+filament_id_to_filename = {}
+
+filament_usage = {}
+
 
 def get_config_suffix():
     """Returns the slicer's config file prefix"""
     if args.slicer == SUPERSLICER:
         return "ini"
-    elif args.slicer == ORCASLICER:
+    if args.slicer == ORCASLICER:
         return "json"
-    else:
-        # I don't know...
-        print("That slicer is not yet supported")
+
+    raise ValueError("That slicer is not yet supported")
 
 
 def load_filaments(url: str):
@@ -98,7 +99,7 @@ def get_filament_filename(filament):
 
 def delete_filament(filament):
     """Delete the filament's file"""
-    old_filename = id_to_filename[filament["id"]]
+    old_filename = filament_id_to_filename[filament["id"]]
 
     print(f"Deleting: {old_filename}")
     os.remove(old_filename)
@@ -117,7 +118,7 @@ def write_filament(filament):
     """Output the filament to the right file"""
     filename = get_filament_filename(filament)
 
-    id_to_filename[filament["id"]] = filename
+    filament_id_to_filename[filament["id"]] = filename
 
     if "material" in filament:
         template_name = f"{filament['material']}.template"
@@ -138,22 +139,52 @@ def write_filament(filament):
 
 def load_and_update_all_filaments(url: str):
     """Load the filaments from Spoolman and store them in the files"""
-    filaments = load_filaments(url + "/api/v1/filament")
+    spools = load_filaments(url + "/api/v1/spool")
 
-    for filament in filaments:
-        write_filament(filament)
+    for spool in spools:
+        write_filament(spool["filament"])
 
 
-def handle_filament_update_msg(msg):
-    """Handles filament update msgs received via WS"""
-    filament = msg["payload"]
+def handle_spool_update_msg(msg):
+    """Handles spool update msgs received via WS"""
+
+    spool = msg["payload"]
+    filament = spool["filament"]
+    filament_id = filament["id"]
     if msg["type"] == "added":
+        if filament_id in filament_usage:
+            filament_usage[filament_id] += 1
+        else:
+            filament_usage[filament_id] = 1
         write_filament(filament)
     elif msg["type"] == "updated":
         delete_filament(filament)
         write_filament(filament)
     elif msg["type"] == "deleted":
-        delete_filament(filament)
+        filament_id = filament["id"]
+        if filament_id in filament_usage:
+            filament_usage[filament_id] -= 1
+            if filament_usage[filament_id] <= 0:
+                # No more usage, remove it
+                delete_filament(filament)
+    else:
+        print(f"Got unknown filament update msg: {msg}")
+
+
+def handle_filament_update_msg(msg):
+    """Handles filamentspool update msgs received via WS"""
+
+    filament = msg["payload"]
+    filament_id = filament["id"]
+    if msg["type"] == "added":
+        pass
+    elif msg["type"] == "updated":
+        if filament_id in filament_usage:
+            # Only update if it was in use
+            delete_filament(filament)
+            write_filament(filament)
+    elif msg["type"] == "deleted":
+        pass
     else:
         print(f"Got unknown filament update msg: {msg}")
 
@@ -164,6 +195,19 @@ async def connect_filament_updates():
         async for msg in connection:
             msg = json.loads(msg)
             handle_filament_update_msg(msg)
+
+
+async def connect_spool_updates():
+    """Connect to Spoolman and receive updates to the filaments"""
+    async for connection in connect("ws" + args.url[4::] + "/api/v1/spool"):
+        async for msg in connection:
+            msg = json.loads(msg)
+            handle_spool_update_msg(msg)
+
+
+async def connect_updates():
+    """Connect to spoolman to get updates"""
+    await asyncio.gather(connect_filament_updates(), connect_spool_updates())
 
 
 if args.delete_all:
@@ -178,4 +222,4 @@ except requests.exceptions.ConnectionError as ex:
 
 if args.updates:
     print("Waiting for updates...")
-    asyncio.run(connect_filament_updates())
+    asyncio.run(connect_updates())
