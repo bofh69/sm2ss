@@ -24,7 +24,7 @@ SLICER = "sl1cer"
 SUPERSLICER = "superslicer"
 
 parser = argparse.ArgumentParser(
-    description="Fetches filaments from Spoolman and creates SuperSlicer filament configs.",
+    description="Fetches filaments from Spoolman and creates slicer filament config files.",
 )
 
 parser.add_argument("--version", action="version", version="%(prog)s 0.0.1")
