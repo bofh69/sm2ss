@@ -20,7 +20,7 @@ DEFAULT_TEMPLATE = "default.template"
 
 ORCASLICER = "orcaslicer"
 PRUSASLICER = "prusaslicer"
-SLICER = "sl1cer"
+SLICER = "slic3r"
 SUPERSLICER = "superslicer"
 
 parser = argparse.ArgumentParser(
