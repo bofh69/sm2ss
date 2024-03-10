@@ -27,6 +27,7 @@ options:
   -u URL, --url URL     URL for the Spoolman installation
   -U, --updates         keep running and update filament configs if they\'re
                         updated in Spoolman
+  -v, --verbose         verbose output
   -D, --delete-all      delete all filament configs before adding existing
                         ones
 ```
@@ -40,11 +41,30 @@ virtualenv venv
 pip install -r requirements.txt
 ```
 
+
 ## Config file templates
+
 spoolman2slicer uses [Jinja2](https://palletsprojects.com/p/jinja/) templates for the configuration files
 it creates. They are stored with the filaments' material's name in
 `templates/`. If the material's template isn't found,
 `default.template` is used.
+
+The variables available in the templates is the return data from Spoolman's filament request, described
+[here](https://donkie.github.io/Spoolman/#tag/filament/operation/Get_filament_filament__filament_id__get).
+
+The default templates assume there is an extra field defined called
+"pressure_advance" and adds a SET_PRESSURE_ADVANCE macro call with its value.
+
+sm2s also adds its own fields under the sm2s field:
+* name - the name of the tool's program file.
+* version - the version of the tool.
+* now - the time when the file is created.
+
+To generate your own templates, copy your existing filament settings
+from the slicers config dir (on linux: ~/.config/SuperSlicer/filament/)
+to the template dir with the material's name plus ".template", then
+change the fields' values like the provided template files.
+
 
 ## Run
 

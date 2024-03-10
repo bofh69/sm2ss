@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 """
-Program to load filaments from Spoolman
-and create SuperSlicer filament configuration.
+Program to load filaments from Spoolman and create slicer filament configuration.
 """
 
 import argparse
 import asyncio
 import json
 import os
+import time
 import sys
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
@@ -22,12 +22,15 @@ ORCASLICER = "orcaslicer"
 PRUSASLICER = "prusaslicer"
 SLICER = "slic3r"
 SUPERSLICER = "superslicer"
+VERSION = "0.0.1"
 
 parser = argparse.ArgumentParser(
     description="Fetches filaments from Spoolman and creates slicer filament config files.",
 )
 
-parser.add_argument("--version", action="version", version="%(prog)s 0.0.1")
+parser.add_argument(
+    "--version", action="version", version="%(prog)s " + VERSION
+)
 parser.add_argument(
     "-d",
     "--dir",
@@ -60,6 +63,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "-v",
+    "--verbose",
+    action="store_true",
+    help="verbose output",
+)
+
+parser.add_argument(
     "-D",
     "--delete-all",
     action="store_true",
@@ -69,7 +79,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 loader = FileSystemLoader("templates-" + args.slicer)
-env = Environment(loader=loader)
+templates = Environment(loader=loader)
 
 filament_id_to_filename = {}
 
@@ -126,15 +136,31 @@ def write_filament(filament):
         template_name = DEFAULT_TEMPLATE
 
     try:
-        template = env.get_template(template_name)
+        template = templates.get_template(template_name)
+        if args.verbose:
+            print(f"Using {template_name} as template")
     except TemplateNotFound:
-        template = env.get_template(DEFAULT_TEMPLATE)
+        template = templates.get_template(DEFAULT_TEMPLATE)
+        if args.verbose:
+            print(f"Using the default template")
 
+    sm2s = {
+        "name": parser.prog,
+        "version": VERSION,
+        "now": time.asctime(),
+    }
+    filament["sm2s"] = sm2s
+    print(f"Writing to: {filename}")
+
+    if args.verbose:
+        print("Fields for the template:")
+        print(filament)
     filament_text = template.render(filament)
 
-    print(f"Writing to: {filename}")
     with open(filename, "w", encoding="utf-8") as cfg_file:
         print(filament_text, file=cfg_file)
+    if args.verbose:
+        print()
 
 
 def load_and_update_all_filaments(url: str):
