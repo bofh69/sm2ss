@@ -142,7 +142,7 @@ def write_filament(filament):
     except TemplateNotFound:
         template = templates.get_template(DEFAULT_TEMPLATE)
         if args.verbose:
-            print(f"Using the default template")
+            print("Using the default template")
 
     sm2s = {
         "name": parser.prog,
