@@ -2,7 +2,7 @@
 bed_temperature = {{settings_bed_temp|int}}
 bridge_fan_speed = -1
 bridge_internal_fan_speed = -1
-chamber_temperature = 50
+chamber_temperature = 40
 compatible_printers = 
 compatible_printers_condition = 
 compatible_prints = 
