@@ -1,3 +1,12 @@
+<!--
+SPDX-FileCopyrightText: 2024 Sebastian Andersson <sebastian@bittr.nu>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+[![REUSE status](https://api.reuse.software/badge/github.com/bofh69/nfc2klipper)](https://api.reuse.software/info/github.com/bofh69/sm2ss)
+![GitHub Workflow Status](https://github.com/bofh69/sm2ss/actions/workflows/pylint.yml/badge.svg)
+
 # Spoolman to slicer filament transfer
 Create slicer filament configuration files from the spools in [Spoolman](https://github.com/Donkie/Spoolman).
 

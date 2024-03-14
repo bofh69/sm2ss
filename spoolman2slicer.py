@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# SPDX-FileCopyrightText: 2024 Sebastian Andersson <sebastian@bittr.nu>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """
 Program to load filaments from Spoolman and create slicer filament configuration.
 """

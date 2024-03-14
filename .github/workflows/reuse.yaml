@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2019 Free Software Foundation Europe e.V. <https://fsfe.org>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: Python package
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  reuse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          pip install reuse
+      - name: Test REUSE compliance
+        run: |
+          reuse lint
