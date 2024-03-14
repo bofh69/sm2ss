@@ -8,14 +8,16 @@ SPDX-License-Identifier: GPL-3.0-or-later
 ![GitHub Workflow Status](https://github.com/bofh69/sm2ss/actions/workflows/pylint.yml/badge.svg)
 
 # Spoolman to slicer filament transfer
-Create slicer filament configuration files from the spools in [Spoolman](https://github.com/Donkie/Spoolman).
+Create slicer filament configuration files from the spools in
+[Spoolman](https://github.com/Donkie/Spoolman).
 
 Working templates are not yet added, but will be added for:
 
 * [OrcaSlicer](https://github.com/SoftFever/OrcaSlicer)
 * [SuperSlicer](https://github.com/supermerill/SuperSlicer)
 
-It should be possible to use it with [slic3r](https://github.com/slic3r/Slic3r)
+It should be possible to use it with
+[slic3r](https://github.com/slic3r/Slic3r)
 and [PrusaSlicer](https://github.com/prusa3d/PrusaSlicer) too.
 
 ## Usage
@@ -53,26 +55,35 @@ pip install -r requirements.txt
 
 ## Config file templates
 
-spoolman2slicer uses [Jinja2](https://palletsprojects.com/p/jinja/) templates for the configuration files
-it creates. They are stored with the filaments' material's name in
-`templates/`. If the material's template isn't found,
-`default.template` is used.
+spoolman2slicer uses [Jinja2](https://palletsprojects.com/p/jinja/)
+templates for the configuration files it creates. They are stored with
+the filaments' material's name in `templates-<slicer>/`.
+If the material's template isn't found, `default.template` is used.
 
-The variables available in the templates is the return data from Spoolman's filament request, described
+The variables available in the templates is the return data from
+Spoolman's filament request, described
 [here](https://donkie.github.io/Spoolman/#tag/filament/operation/Get_filament_filament__filament_id__get).
 
+They are also printed when the `-v` argument is used and
+the filament is about to be written.
+
 The default templates assume there is an extra field defined called
-"pressure_advance" and adds a SET_PRESSURE_ADVANCE macro call with its value.
+"pressure_advance" and adds a SET_PRESSURE_ADVANCE macro call with its
+value.
 
 sm2s also adds its own fields under the sm2s field:
 * name - the name of the tool's program file.
 * version - the version of the tool.
 * now - the time when the file is created.
+* slicer_suffix - the filename suffix used by the slicer.
 
 To generate your own templates, copy your existing filament settings
 from the slicers config dir (on linux: ~/.config/SuperSlicer/filament/)
 to the template dir with the material's name plus ".template", then
 change the fields' values like the provided template files.
+
+The filename used for the filaments is created by
+the `filename.template` template.
 
 
 ## Run
