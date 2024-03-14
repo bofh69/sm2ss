@@ -17,10 +17,10 @@ import sys
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 import requests
-
 from websockets.client import connect
 
 DEFAULT_TEMPLATE = "default.template"
+FILENAME_TEMPLATE = "filename.template"
 
 ORCASLICER = "orcaslicer"
 PRUSASLICER = "prusaslicer"
@@ -108,7 +108,8 @@ def load_filaments(url: str):
 
 def get_filament_filename(filament):
     """Returns the filament's config filename"""
-    return f"{args.dir}/{filament['vendor']['name']}-{filament['name']}.{get_config_suffix()}"
+    template = templates.get_template(FILENAME_TEMPLATE)
+    return args.dir + "/" + template.render(filament)
 
 
 def delete_filament(filament):
@@ -130,6 +131,15 @@ def delete_all_filaments():
 
 def write_filament(filament):
     """Output the filament to the right file"""
+
+    sm2s = {
+        "name": parser.prog,
+        "version": VERSION,
+        "now": time.asctime(),
+        "slicer_suffix": get_config_suffix(),
+    }
+    filament["sm2s"] = sm2s
+
     filename = get_filament_filename(filament)
 
     filament_id_to_filename[filament["id"]] = filename
@@ -148,12 +158,6 @@ def write_filament(filament):
         if args.verbose:
             print("Using the default template")
 
-    sm2s = {
-        "name": parser.prog,
-        "version": VERSION,
-        "now": time.asctime(),
-    }
-    filament["sm2s"] = sm2s
     print(f"Writing to: {filename}")
 
     if args.verbose:
