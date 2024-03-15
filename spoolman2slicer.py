@@ -86,6 +86,7 @@ loader = FileSystemLoader("templates-" + args.slicer)
 templates = Environment(loader=loader)
 
 filament_id_to_filename = {}
+filament_id_to_content = {}
 
 filename_usage = {}
 
@@ -123,7 +124,7 @@ def get_filament_filename(filament):
     return args.dir + "/" + template.render(filament)
 
 
-def delete_filament(filament, is_update = False):
+def delete_filament(filament, is_update=False):
     """Delete the filament's file if no longer in use"""
     filename = filament_id_to_filename[filament["id"]]
 
@@ -133,7 +134,12 @@ def delete_filament(filament, is_update = False):
     if filename_usage[filename] > 0:
         return
 
-    if not is_update:
+    new_filename = None
+    if is_update:
+        add_sm2s_to_filament(filament)
+        new_filename = get_filament_filename(filament)
+
+    if filename != new_filename:
         print(f"Deleting: {filename}")
         os.remove(filename)
 
@@ -157,7 +163,11 @@ def write_filament(filament):
     else:
         filename_usage[filename] = 1
 
-    filament_id_to_filename[filament["id"]] = filename
+    filament_id = filament["id"]
+
+    old_filename = filament_id_to_filename.get(filament_id)
+
+    filament_id_to_filename[filament_id] = filename
 
     if "material" in filament:
         template_name = f"{filament['material']}.template"
@@ -173,15 +183,25 @@ def write_filament(filament):
         if args.verbose:
             print("Using the default template")
 
-    print(f"Writing to: {filename}")
-
     if args.verbose:
+        print(f"Rendering for filename: {filename}")
         print("Fields for the template:")
         print(filament)
+
     filament_text = template.render(filament)
+    old_filament_text = filament_id_to_content.get(filament_id)
+
+    if old_filament_text == filament_text and old_filename == filename:
+        if args.verbose:
+            print("Same content, file not updated")
+        return
+
+    print(f"Writing to: {filename}")
 
     with open(filename, "w", encoding="utf-8") as cfg_file:
         print(filament_text, file=cfg_file)
+    filament_id_to_content[filament_id] = filament_text
+
     if args.verbose:
         print()
 
@@ -199,6 +219,7 @@ def handle_filament_update(filament):
     """Handles update of a filament"""
     delete_filament(filament, is_update=True)
     write_filament(filament)
+
 
 def handle_spool_update_msg(msg):
     """Handles spool update msgs received via WS"""
