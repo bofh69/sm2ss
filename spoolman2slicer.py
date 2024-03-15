@@ -111,7 +111,7 @@ def get_config_suffix():
     raise ValueError("That slicer is not yet supported")
 
 
-def load_filaments(url: str):
+def load_filaments_from_spoolman(url: str):
     """Load filaments json data from Spoolman"""
     data = requests.get(url, timeout=10)
     return json.loads(data.text)
@@ -123,12 +123,19 @@ def get_filament_filename(filament):
     return args.dir + "/" + template.render(filament)
 
 
-def delete_filament(filament):
-    """Delete the filament's file"""
-    old_filename = filament_id_to_filename[filament["id"]]
+def delete_filament(filament, is_update = False):
+    """Delete the filament's file if no longer in use"""
+    filename = filament_id_to_filename[filament["id"]]
 
-    print(f"Deleting: {old_filename}")
-    os.remove(old_filename)
+    if not filename in filename_usage:
+        return
+    filename_usage[filename] -= 1
+    if filename_usage[filename] > 0:
+        return
+
+    if not is_update:
+        print(f"Deleting: {filename}")
+        os.remove(filename)
 
 
 def delete_all_filaments():
@@ -144,8 +151,11 @@ def write_filament(filament):
     """Output the filament to the right file"""
 
     add_sm2s_to_filament(filament)
-
     filename = get_filament_filename(filament)
+    if filename in filename_usage:
+        filename_usage[filename] += 1
+    else:
+        filename_usage[filename] = 1
 
     filament_id_to_filename[filament["id"]] = filename
 
@@ -178,54 +188,29 @@ def write_filament(filament):
 
 def load_and_update_all_filaments(url: str):
     """Load the filaments from Spoolman and store them in the files"""
-    spools = load_filaments(url + "/api/v1/spool")
+    spools = load_filaments_from_spoolman(url + "/api/v1/spool")
 
     for spool in spools:
         filament = spool["filament"]
-        add_sm2s_to_filament(filament)
-        filename = get_filament_filename(filament)
-        filename_usage[filename] = 1
         write_filament(filament)
 
 
-def handle_filament_update(filament_id, filament, filename):
+def handle_filament_update(filament):
     """Handles update of a filament"""
-    if filament_id in filament_id_to_filename:
-        old_filename = filament_id_to_filename[filament_id]
-        if old_filename in filename_usage:
-            filename_usage[old_filename] -= 1
-            if filename_usage[old_filename] <= 0:
-                # No more usage, remove it
-                delete_filament(filament)
-    if filename in filename_usage:
-        filename_usage[filename] += 1
-    else:
-        filename_usage[filename] = 1
+    delete_filament(filament, is_update=True)
     write_filament(filament)
-
 
 def handle_spool_update_msg(msg):
     """Handles spool update msgs received via WS"""
 
     spool = msg["payload"]
     filament = spool["filament"]
-    filament_id = filament["id"]
-    add_sm2s_to_filament(filament)
-    filename = get_filament_filename(filament)
     if msg["type"] == "added":
-        if filename in filename_usage:
-            filename_usage[filename] += 1
-        else:
-            filename_usage[filename] = 1
         write_filament(filament)
     elif msg["type"] == "updated":
-        handle_filament_update(filament_id, filament, filename)
+        handle_filament_update(filament)
     elif msg["type"] == "deleted":
-        if filename in filename_usage:
-            filename_usage[filename] -= 1
-            if filename_usage[filename] <= 0:
-                # No more usage, remove it
-                delete_filament(filament)
+        delete_filament(filament)
     else:
         print(f"Got unknown filament update msg: {msg}")
 
@@ -237,10 +222,7 @@ def handle_filament_update_msg(msg):
         pass
     elif msg["type"] == "updated":
         filament = msg["payload"]
-        filament_id = filament["id"]
-        add_sm2s_to_filament(filament)
-        filename = get_filament_filename(filament)
-        handle_filament_update(filament_id, filament, filename)
+        handle_filament_update(filament)
     elif msg["type"] == "deleted":
         pass
     else:
