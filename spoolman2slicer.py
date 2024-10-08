@@ -19,7 +19,8 @@ from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 import requests
 from websockets.client import connect
 
-DEFAULT_TEMPLATE = "default.template"
+DEFAULT_TEMPLATE_PREFIX = "default."
+DEFAULT_TEMPLATE_SUFFIX = ".template"
 FILENAME_TEMPLATE = "filename.template"
 
 ORCASLICER = "orcaslicer"
@@ -32,9 +33,7 @@ parser = argparse.ArgumentParser(
     description="Fetches filaments from Spoolman and creates slicer filament config files.",
 )
 
-parser.add_argument(
-    "--version", action="version", version="%(prog)s " + VERSION
-)
+parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
 parser.add_argument(
     "-d",
     "--dir",
@@ -91,13 +90,14 @@ filament_id_to_content = {}
 filename_usage = {}
 
 
-def add_sm2s_to_filament(filament):
+def add_sm2s_to_filament(filament, suffix):
     """Adds the sm2s object to filament"""
     sm2s = {
         "name": parser.prog,
         "version": VERSION,
         "now": time.asctime(),
-        "slicer_suffix": get_config_suffix(),
+        "now_int": int(time.time()),
+        "slicer_suffix": suffix,
     }
     filament["sm2s"] = sm2s
 
@@ -105,9 +105,9 @@ def add_sm2s_to_filament(filament):
 def get_config_suffix():
     """Returns the slicer's config file prefix"""
     if args.slicer == SUPERSLICER:
-        return "ini"
+        return ["ini"]
     if args.slicer == ORCASLICER:
-        return "json"
+        return ["json", "info"]
 
     raise ValueError("That slicer is not yet supported")
 
@@ -124,9 +124,28 @@ def get_filament_filename(filament):
     return args.dir + "/" + template.render(filament)
 
 
+def get_cached_filename_from_filaments_id(filament):
+    """Returns the cached (old) filename for the filament"""
+    return filament_id_to_filename.get(
+        f"{filament['id']}-{filament['sm2s']['slicer_suffix']}"
+    )
+
+
+def set_cached_filename_from_filaments_id(filament, filename):
+    """Stores the filename for the filament in a cache"""
+    filament_id_to_filename[f"{filament['id']}-{filament['sm2s']['slicer_suffix']}"] = (
+        filename
+    )
+
+
+def get_default_template_for_suffix(suffix):
+    """Get the template filename for the given suffix"""
+    return f"{DEFAULT_TEMPLATE_PREFIX}{suffix}{DEFAULT_TEMPLATE_SUFFIX}"
+
+
 def delete_filament(filament, is_update=False):
     """Delete the filament's file if no longer in use"""
-    filename = filament_id_to_filename[filament["id"]]
+    filename = get_cached_filename_from_filaments_id(filament)
 
     if not filename in filename_usage:
         return
@@ -136,7 +155,6 @@ def delete_filament(filament, is_update=False):
 
     new_filename = None
     if is_update:
-        add_sm2s_to_filament(filament)
         new_filename = get_filament_filename(filament)
 
     if filename != new_filename:
@@ -147,16 +165,16 @@ def delete_filament(filament, is_update=False):
 def delete_all_filaments():
     """Delete all config files in the filament dir"""
     for filename in os.listdir(args.dir):
-        if filename.endswith("." + get_config_suffix()):
-            filename = args.dir + "/" + filename
-            print(f"Deleting: {filename}")
-            os.remove(filename)
+        for suffix in get_config_suffix():
+            if filename.endswith("." + suffix):
+                filename = args.dir + "/" + filename
+                print(f"Deleting: {filename}")
+                os.remove(filename)
 
 
 def write_filament(filament):
     """Output the filament to the right file"""
 
-    add_sm2s_to_filament(filament)
     filename = get_filament_filename(filament)
     if filename in filename_usage:
         filename_usage[filename] += 1
@@ -165,21 +183,30 @@ def write_filament(filament):
 
     filament_id = filament["id"]
 
-    old_filename = filament_id_to_filename.get(filament_id)
+    # old_filename = filament_id_to_filename.get(filament_id)
+    old_filename = get_cached_filename_from_filaments_id(filament)
 
-    filament_id_to_filename[filament_id] = filename
+    # filament_id_to_filename[filament_id] = filename
+    set_cached_filename_from_filaments_id(filament, filename)
 
     if "material" in filament:
-        template_name = f"{filament['material']}.template"
+        template_name = (
+            f"{filament['material']}.{filament['sm2s']['slicer_suffix']}.template"
+        )
     else:
-        template_name = DEFAULT_TEMPLATE
+        template_name = get_default_template_for_suffix(
+            filament["sm2s"]["slicer_suffix"]
+        )
 
     try:
         template = templates.get_template(template_name)
         if args.verbose:
             print(f"Using {template_name} as template")
     except TemplateNotFound:
-        template = templates.get_template(DEFAULT_TEMPLATE)
+        template_name = get_default_template_for_suffix(
+            filament["sm2s"]["slicer_suffix"]
+        )
+        template = templates.get_template(template_name)
         if args.verbose:
             print("Using the default template")
 
@@ -212,13 +239,17 @@ def load_and_update_all_filaments(url: str):
 
     for spool in spools:
         filament = spool["filament"]
-        write_filament(filament)
+        for suffix in get_config_suffix():
+            add_sm2s_to_filament(filament, suffix)
+            write_filament(filament)
 
 
 def handle_filament_update(filament):
     """Handles update of a filament"""
-    delete_filament(filament, is_update=True)
-    write_filament(filament)
+    for suffix in get_config_suffix():
+        add_sm2s_to_filament(filament, suffix)
+        delete_filament(filament, is_update=True)
+        write_filament(filament)
 
 
 def handle_spool_update_msg(msg):
@@ -227,11 +258,15 @@ def handle_spool_update_msg(msg):
     spool = msg["payload"]
     filament = spool["filament"]
     if msg["type"] == "added":
-        write_filament(filament)
+        for suffix in get_config_suffix():
+            add_sm2s_to_filament(filament, suffix)
+            write_filament(filament)
     elif msg["type"] == "updated":
         handle_filament_update(filament)
     elif msg["type"] == "deleted":
-        delete_filament(filament)
+        for suffix in get_config_suffix():
+            add_sm2s_to_filament(filament, suffix)
+            delete_filament(filament)
     else:
         print(f"Got unknown filament update msg: {msg}")
 

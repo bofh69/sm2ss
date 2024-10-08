@@ -58,7 +58,9 @@ pip install -r requirements.txt
 spoolman2slicer uses [Jinja2](https://palletsprojects.com/p/jinja/)
 templates for the configuration files it creates. They are stored with
 the filaments' material's name in `templates-<slicer>/`.
-If the material's template isn't found, `default.template` is used.
+If the material's template isn't found, `default.<suffix>.template`
+is used, where `suffix` is the config files suffix (`ini` for Super Slicer,
+`info` and `json` for Orca Slicer).
 
 The variables available in the templates is the return data from
 Spoolman's filament request, described
@@ -75,12 +77,14 @@ sm2s also adds its own fields under the sm2s field:
 * name - the name of the tool's program file.
 * version - the version of the tool.
 * now - the time when the file is created.
-* slicer_suffix - the filename suffix used by the slicer.
+* now_int - the time when the file is created as the number of seconds since UNIX' epoch.
+* slicer_suffix - the filename's suffix.
 
 To generate your own templates, copy your existing filament settings
-from the slicers config dir (on linux: ~/.config/SuperSlicer/filament/)
-to the template dir with the material's name plus ".template", then
-change the fields' values like the provided template files.
+from the slicers config dir (on linux: `~/.config/SuperSlicer/filament/`,
+`~/.config/OrcaSlicer/user/default/filament/`) to the template dir with
+the material's name plus "<suffix>.template", then change the fields'
+values like the provided template files.
 
 The filename used for the filaments is created by
 the `filename.template` template.
@@ -90,6 +94,10 @@ the `filename.template` template.
 
 ```sh
 ./spoolman2slicer.py -U -d ~/.config/SuperSlicer/filament/
+```
+or
+```sh
+./spoolman2slicer.py -s orcaslicer -U -d ~/.config/OrcaSlicer/user/default/filament/
 ```
 
 See the other options above.
