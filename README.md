@@ -69,9 +69,8 @@ Spoolman's filament request, described
 They are also printed when the `-v` argument is used and
 the filament is about to be written.
 
-The default templates assume there is an extra field defined called
-"pressure_advance" and adds a SET_PRESSURE_ADVANCE macro call with its
-value.
+The default templates assumes there is an extra field defined called
+"pressure_advance" and sets the pressure advance settings based on it.
 
 sm2s also adds its own fields under the sm2s field:
 * name - the name of the tool's program file.
