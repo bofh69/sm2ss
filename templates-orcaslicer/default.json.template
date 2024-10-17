@@ -25,13 +25,21 @@
         "{{id}}"
     ],
     "filament_start_gcode": [
-        "SET_PRESSURE_ADVANCE ADVANCE={{extra.pressure_advance|default(0)|float}}\nASSERT_ACTIVE_FILAMENT ID={{id}}"
+        "ASSERT_ACTIVE_FILAMENT ID={{id}}"
     ],
+{% if extra.pressure_advance %}
+    "enable_pressure_advance": [
+	"1"
+    ],
+    "pressure_advance": [
+        "{{extra.pressure_advance|default(0)|float}}"
+    ],
+{% endif %}
     "filament_vendor": [
         "{{vendor.name}}"
     ],
     "from": "User",
-    "inherits": "Voron Generic PLA",
+    "inherits": "Voron Generic {{material}}",
     "is_custom_defined": "0",
     "name": "{{name}}",
     "nozzle_temperature": [
@@ -40,28 +48,28 @@
     "nozzle_temperature_initial_layer": [
         "{{settings_extruder_temp|int + 10}}"
     ],
-    "cool_plate_temp" : [
+    "cool_plate_temp": [
         "{{settings_bed_temp|int}}"
     ],
-    "eng_plate_temp" : [
+    "eng_plate_temp": [
         "{{settings_bed_temp|int}}"
     ],
-    "hot_plate_temp" : [
+    "hot_plate_temp": [
         "{{settings_bed_temp|int}}"
     ],
-    "textured_plate_temp" : [
+    "textured_plate_temp": [
         "{{settings_bed_temp|int}}"
     ],
-    "cool_plate_temp_initial_layer" : [
+    "cool_plate_temp_initial_layer": [
         "{{settings_bed_temp|int + 10}}"
     ],
-    "eng_plate_temp_initial_layer" : [
+    "eng_plate_temp_initial_layer": [
         "{{settings_bed_temp|int + 10}}"
     ],
-    "hot_plate_temp_initial_layer" : [
+    "hot_plate_temp_initial_layer": [
         "{{settings_bed_temp|int + 10}}"
     ],
-    "textured_plate_temp_initial_layer" : [
+    "textured_plate_temp_initial_layer": [
         "{{settings_bed_temp|int + 10}}"
     ],
     "version": "2.1.1.0"
