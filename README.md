@@ -11,14 +11,15 @@ SPDX-License-Identifier: GPL-3.0-or-later
 Create slicer filament configuration files from the spools in
 [Spoolman](https://github.com/Donkie/Spoolman).
 
-Working templates are not yet added, but will be added for:
-
+My templates are included for:
 * [OrcaSlicer](https://github.com/SoftFever/OrcaSlicer)
 * [SuperSlicer](https://github.com/supermerill/SuperSlicer)
 
+They are easy to update with your settings.
+
 It should be possible to use it with
 [slic3r](https://github.com/slic3r/Slic3r)
-and [PrusaSlicer](https://github.com/prusa3d/PrusaSlicer) too.
+and [PrusaSlicer](https://github.com/prusa3d/PrusaSlicer) too, but there are no included templates for them.
 
 ## Usage
 
